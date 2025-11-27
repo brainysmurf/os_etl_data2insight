@@ -3,19 +3,27 @@ import gspread
 from .services import Service
 import google
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class Doc:
     spreadsheet: gspread.Spreadsheet
 
+    @classmethod
+    def convert_data_to_df(cls, data):
+        return pd.DataFrame(data[1:], columns=data[0])  # first row as header
+
     def read_tab(self, title):
         tab = self.spreadsheet.worksheet(title)
         # 4. Get all values as a list of lists
         data = tab.get_all_values()
+        logger.debug("Got data")
 
         # 5. Convert to a DataFrame
-        return pd.DataFrame(data[1:], columns=data[0])  # first row as header
+        return Doc.convert_data_to_df(data)
 
 
 @dataclass
@@ -37,7 +45,6 @@ class GSheet:
 
         -> Will have .document
         """
-        input(self.spreadsheet_id)
         self.client = gspread.Client(auth=self.service.creds)
         if open_:
             self.open_by_key()

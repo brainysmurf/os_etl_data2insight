@@ -13,14 +13,13 @@ class Service:
             from google.colab import auth
 
         except ImportError:
-            #
+            self.local = True
             from google.oauth2 import service_account
             from .sheets import GSheet
 
             self.creds = service_account.Credentials.from_service_account_file(
                 "service_account.json", scopes=GSheet.scopes()
             )
-            self.local = True
 
         if not self.local:
             # This works with Google colab
