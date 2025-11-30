@@ -8,6 +8,8 @@ import pathlib
 import json
 from io import StringIO
 from gspread_dataframe import set_with_dataframe
+import duckdb
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,7 @@ class Worksheet(AbstractDoc):
         rows, cols = df.shape
         if title in [tab.title for tab in self.spreadsheet.worksheets()]:
             tab = self.spreadsheet.worksheet(title)
+            tab.clear()
         else:
             tab = self.spreadsheet.add_worksheet(
                 title=title, rows=max(rows + 1, 10), cols=max(cols, 5)
@@ -76,8 +79,16 @@ class Worksheet(AbstractDoc):
         logger.info(f"Wrote {rows + 1} rows and {cols} cols")
 
 
+class AbstractParent:
+    def __getattr__(self, name):
+        if self.document is None:
+            raise Exception(f"Worksheet is None, did you open it?")
+
+        return getattr(self.document, name)
+
+
 @dataclass
-class GSheet:
+class GSheet(AbstractParent):
     """
     Initialize a spreadsheet for convenience
     """
@@ -125,3 +136,35 @@ class Directory:
     def open(self) -> Dir:
         self.document = Dir(self.path)
         return self.document
+
+
+@dataclass
+class DuckDB(AbstractDoc):
+    database: duckdb.DuckDBPyConnection
+
+    @classmethod
+    def convert_data_to_df(cls, data):
+        return pd.DataFrame(data)
+
+    def write_tab(self, title: str, df: pd.DataFrame):
+        # Table name: sheet title with spaces replaced
+        table_name = title.replace(" ", "_")
+
+        # Create table in DuckDB
+        self.database.execute(f"CREATE TABLE {table_name} AS SELECT * FROM df")
+
+
+@dataclass
+class DuckDBParent(AbstractParent):
+    connection_string: str = ":memory:"
+    open_: bool = True
+    document: DuckDB = field(init=False)
+
+    def __post_init__(self):
+        if self.open_:
+            self.open()
+        else:
+            self.document = None
+
+    def open(self):
+        self.document = DuckDB(duckdb.connect(database=self.connection_string))

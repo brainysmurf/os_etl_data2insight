@@ -11,6 +11,8 @@ dependencies = [
   'click',
   'python-dotenv',
   'gspread-dataframe',
+  'faker',
+  'duckdb',
 ]
 
 [project.scripts]

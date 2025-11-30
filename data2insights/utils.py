@@ -6,6 +6,7 @@ TYPE_KEYWORDS = {
     "gcloud": ["foo", "bar", "baz"],
     "local": ["alpha", "beta"],
     "screen": ["abc", "def"],
+    "duckdb": ["connection-string"],
 }
 
 SOURCE_KEYWORDS = TYPE_KEYWORDS.copy()
